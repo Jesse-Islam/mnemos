@@ -38,4 +38,4 @@ Your file should have three columns. The first row is treated as a header and sk
 * <kbd>Z</kbd> : Undo
 * <kbd>R</kbd> : Reset Deck
 
-
+Made with the assistance of Gemini 3 for code generation
