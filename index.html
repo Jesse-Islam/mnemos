@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mnemos | Flashcards</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <style>
+        :root { --bg: #020617; --card: #0f172a; --text: #f8fafc; --ui-text: #64748b; --accent: #fbbf24; }
+        [data-theme="light"] { --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --ui-text: #94a3b8; }
+
+        body { 
+            background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            height: 100vh; margin: 0; overflow: hidden; transition: background 0.4s ease;
+        }
+        
+        #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.1); }
+        #progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease; box-shadow: 0 0 15px var(--accent); }
+
+        #toolbar { position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 12px; z-index: 100; background: rgba(128,128,128,0.1); padding: 8px 15px; border-radius: 20px; backdrop-filter: blur(10px); }
+        .swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .swatch.active { border-color: var(--text); }
+        #theme-toggle { background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 18px; padding: 0 5px; }
+        .github-link { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; border-left: 1px solid var(--ui-text); padding-left: 12px; opacity: 0.7; transition: 0.3s; }
+        .github-link:hover { opacity: 1; color: var(--accent); }
+
+        #drop-zone { border: 3px dashed var(--ui-text); padding: 100px; border-radius: 40px; text-align: center; cursor: pointer; width: 650px; transition: 0.2s; }
+        #drop-zone:hover { border-color: var(--accent); background: rgba(128,128,128,0.03); }
+        .hidden { display: none !important; }
+
+        #study-area { width: 95%; max-width: 1250px; height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #card-container { perspective: 2500px; width: 100%; height: 100%; max-height: 600px; position: relative; }
+        
+        /* EXACT 300ms transition for mathematically precise text swapping */
+        #card { position: relative; width: 100%; height: 100%; transition: transform 0.3s ease-in-out; transform-style: preserve-3d; }
+        #card.is-flipped { transform: rotateY(180deg); }
+        
+        .side { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); border-radius: 50px; padding: 60px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5); border: 1px solid rgba(128,128,128,0.1); box-sizing: border-box; }
+        .back { transform: rotateY(180deg); border: 4px solid var(--accent); }
+        
+        .category { font-size: 1rem; text-transform: uppercase; letter-spacing: 8px; color: var(--accent); position: absolute; top: 40px; font-weight: 800; }
+        .content { font-size: 2.2rem; font-weight: 700; line-height: 1.15; text-align: center; width: 100%; word-break: break-word; overflow-wrap: break-word; }
+
+        #controls { margin-top: 35px; color: var(--ui-text); font-size: 1.2rem; font-weight: 600; text-align: center; }
+        kbd { background: var(--card); padding: 6px 14px; border-radius: 10px; color: var(--text); border: 1px solid var(--ui-text); margin: 0 5px; }
+        .disabled { opacity: 0.15; pointer-events: none; filter: grayscale(1); }
+        
+        #stats { position: absolute; top: 35px; right: 40px; font-size: 1rem; color: var(--ui-text); font-weight: 700; letter-spacing: 2px; }
+        #tts-indicator { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); font-size: 0.9rem; color: var(--accent); opacity: 0; transition: 0.2s; font-weight: 700; }
+        #tts-indicator.active { opacity: 1; bottom: -20px; }
+
+        .btn { background: var(--accent); color: var(--bg); border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.2s; font-family: inherit; }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
+
+        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        #modal { background: var(--card); padding: 40px; border-radius: 30px; max-width: 500px; border: 1px solid var(--ui-text); text-align: left; }
+    </style>
+</head>
+<body>
+
+    <div id="progress-container"><div id="progress-bar"></div></div>
+    
+    <div id="toolbar">
+        <button id="theme-toggle" title="Toggle Mode">🌙</button>
+        <div class="swatch active" style="background:#fbbf24" onclick="applyTheme('midnight', this)" title="Midnight"></div>
+        <div class="swatch" style="background:#10b981" onclick="applyTheme('cyber', this)" title="Cyber"></div>
+        <div class="swatch" style="background:#bd93f9" onclick="applyTheme('lavender', this)" title="Aura Lavender"></div>
+        <div class="swatch" style="background:#E07A5F" onclick="applyTheme('terracotta', this)" title="Terracotta"></div>
+        <div class="swatch" style="background:#f43f5e" onclick="applyTheme('rosewater', this)" title="Rosewater"></div>
+        <a href="https://github.com/Jesse-Islam/mnemos" target="_blank" class="github-link">GitHub</a>
+    </div>
+
+    <div id="stats">DECK: <span id="count">0</span> | UNDO: <span id="h-count">0</span></div>
+
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <h1 style="font-size: 2.8rem; margin-bottom: 10px;">Mnemos</h1>
+        <p style="color: var(--ui-text); line-height: 1.8; font-size: 1.2rem;">Drop CSV to begin studying</p>
+        <div style="display:flex; gap: 10px; justify-content: center;">
+            <button class="btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">Upload File</button>
+            <button class="btn btn-outline" onclick="event.stopPropagation(); showModal()">Create Deck</button>
+        </div>
+        <input type="file" id="file-input" style="display:none" accept=".csv">
+    </div>
+
+    <div id="modal-overlay" onclick="hideModal()">
+        <div id="modal" onclick="event.stopPropagation()">
+            <h2 style="margin-top:0; color:var(--accent);">Create Your Own Deck</h2>
+            <p>Your CSV file should have exactly three columns in this order:</p>
+            <ol style="line-height: 2;">
+                <li><code>Question</code></li>
+                <li><code>Answer</code></li>
+                <li><code>Category</code></li>
+            </ol>
+            <div style="display:flex; gap: 10px; margin-top: 20px;">
+                <button class="btn" style="flex:1" onclick="downloadTemplate()">Download Template</button>
+                <button class="btn btn-outline" onclick="hideModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="study-area" class="hidden">
+        <div id="card-container">
+            <div id="card">
+                <div class="side front">
+                    <div class="category" id="cat-front">Category</div>
+                    <div id="q-text" class="content">Question</div>
+                </div>
+                <div class="side back">
+                    <div id="a-text" class="content">Answer</div>
+                </div>
+            </div>
+            <div id="tts-indicator">🔊 SPEAKING...</div>
+        </div>
+        <div id="controls">
+            <div id="reveal-hint"><kbd>Space</kbd> Reveal &nbsp; <kbd>S</kbd> Speak</div>
+            <div id="grade-row" class="disabled" style="margin: 25px 0;">
+                <kbd>1</kbd> Hard &nbsp; <kbd>2</kbd> Easy &nbsp; <kbd>3</kbd> Mastered
+            </div>
+            <div><kbd>Z</kbd> Undo | <kbd>R</kbd> Reset</div>
+        </div>
+    </div>
+
+    <script>
+        const themes = {
+            midnight: { dark: ['#020617', '#0f172a', '#fbbf24'], light: ['#f8fafc', '#ffffff', '#b45309'] },
+            cyber: { dark: ['#000000', '#050505', '#10b981'], light: ['#f0fff4', '#ffffff', '#059669'] },
+            lavender: { dark: ['#0d0b14', '#1a1626', '#bd93f9'], light: ['#f5f3ff', '#ffffff', '#7c3aed'] },
+            terracotta: { dark: ['#1c1917', '#292524', '#E07A5F'], light: ['#fff7ed', '#ffffff', '#c2410c'] },
+            rosewater: { dark: ['#1c1917', '#292524', '#f43f5e'], light: ['#fff1f2', '#ffffff', '#e11d48'] }
+        };
+
+        let deck = [], history = [], totalCards = 0, isFlipped = false, isTransitioning = false;
+        
+        // Cache DOM elements for performance
+        const cardEl = document.getElementById('card');
+        const gradeRow = document.getElementById('grade-row');
+        const revealHint = document.getElementById('reveal-hint');
+        const qText = document.getElementById('q-text');
+        const aText = document.getElementById('a-text');
+        const catFront = document.getElementById('cat-front');
+        const countEl = document.getElementById('count');
+        const hCountEl = document.getElementById('h-count');
+        const progressBar = document.getElementById('progress-bar');
+
+        /* UI Theme Logic */
+        function applyTheme(name, element = null) {
+            const mode = document.documentElement.getAttribute('data-theme') || 'dark';
+            const colors = themes[name][mode];
+            document.documentElement.style.setProperty('--bg', colors[0]);
+            document.documentElement.style.setProperty('--card', colors[1]);
+            document.documentElement.style.setProperty('--accent', colors[2]);
+            localStorage.setItem('mn-theme', name);
+            if(element) {
+                document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+                element.classList.add('active');
+            }
+        }
+
+        document.getElementById('theme-toggle').onclick = () => {
+            const target = (document.documentElement.getAttribute('data-theme') || 'dark') === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', target);
+            document.getElementById('theme-toggle').innerText = target === 'light' ? '☀️' : '🌙';
+            applyTheme(localStorage.getItem('mn-theme') || 'midnight');
+            localStorage.setItem('mn-mode', target);
+        };
+
+        // Init App Theme
+        const savedMode = localStorage.getItem('mn-mode') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedMode);
+        document.getElementById('theme-toggle').innerText = savedMode === 'light' ? '☀️' : '🌙';
+        
+        // Auto-select correct swatch on load
+        const savedTheme = localStorage.getItem('mn-theme') || 'midnight';
+        const swatchTitles = {'midnight':'Midnight', 'cyber':'Cyber', 'lavender':'Aura Lavender', 'terracotta':'Terracotta', 'rosewater':'Rosewater'};
+        const activeSwatch = Array.from(document.querySelectorAll('.swatch')).find(s => s.title === swatchTitles[savedTheme]);
+        applyTheme(savedTheme, activeSwatch);
+
+        function showModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function hideModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        function downloadTemplate() {
+            const a = document.createElement('a');
+            a.setAttribute('href', 'https://raw.githubusercontent.com/Jesse-Islam/mnemos/main/example.csv');
+            a.setAttribute('download', 'mnemos_template.csv');
+            a.click();
+        }
+
+        /* Core Engine Logic */
+        document.getElementById('file-input').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const rows = event.target.result.split('\n').filter(r => r.trim());
+                deck = rows.slice(1).map(r => {
+                    const cols = r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                    return { q: cols[0]?.replace(/"/g,'').trim() || '', a: cols[1]?.replace(/"/g,'').trim() || '', c: (cols[2] || 'General').trim() };
+                }).filter(i => i.q);
+                totalCards = deck.length;
+                document.getElementById('drop-zone').classList.add('hidden');
+                document.getElementById('study-area').classList.remove('hidden');
+                updateDisplay();
+            };
+            reader.readAsText(e.target.files[0]);
+        };
+
+        function updateDisplay() {
+            if (!deck.length && totalCards > 0) {
+                qText.innerText = "Session Complete 🏆";
+                aText.innerText = "Press R to Restart Deck";
+                catFront.innerText = "DONE";
+                progressBar.style.width = "100%";
+                return;
+            }
+            qText.innerText = deck[0].q;
+            aText.innerText = deck[0].a;
+            catFront.innerText = deck[0].c;
+            countEl.innerText = deck.length;
+            hCountEl.innerText = history.length;
+            progressBar.style.width = `${((totalCards - deck.length) / totalCards) * 100}%`;
+            
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });
+            }
+        }
+
+        /* Strict Offline Voice Logic */
+        function speak() {
+            window.speechSynthesis.cancel();
+            if(!deck.length) return;
+            
+            const textToRead = isFlipped ? deck[0].a : deck[0].q;
+            const msg = new SpeechSynthesisUtterance(textToRead);
+            
+            // Filter available voices for local-only execution
+            const voices = window.speechSynthesis.getVoices();
+            const offlineVoices = voices.filter(voice => voice.localService === true);
+            
+            if (offlineVoices.length > 0) {
+                // Try to find an English offline voice, otherwise grab the first available offline voice
+                const preferredOffline = offlineVoices.find(v => v.lang.startsWith('en')) || offlineVoices[0];
+                msg.voice = preferredOffline;
+            }
+
+            msg.onstart = () => document.getElementById('tts-indicator').classList.add('active');
+            msg.onend = () => document.getElementById('tts-indicator').classList.remove('active');
+            
+            window.speechSynthesis.speak(msg);
+        }
+
+        /* STATE SYNCHRONIZATION */
+
+        function grade(key) {
+            // State Lock: Cannot grade if animating, viewing front, or deck is empty.
+            if (isTransitioning || !isFlipped || !deck.length) return;
+            isTransitioning = true;
+            window.speechSynthesis.cancel();
+            
+            const current = deck.shift();
+            history.push({ card: current, type: key });
+            
+            // Re-insert based on grade safely within boundaries
+            if (key === '1') deck.splice(Math.min(3, deck.length), 0, current);
+            if (key === '2') deck.splice(Math.min(10, deck.length), 0, current);
+
+            // Trigger Rotation back to 0deg
+            isFlipped = false;
+            cardEl.classList.remove('is-flipped');
+            gradeRow.classList.add('disabled');
+            revealHint.classList.remove('disabled');
+
+            // Swap text exactly at 150ms (card is invisible edge-on)
+            setTimeout(() => {
+                updateDisplay();
+            }, 150);
+
+            // Unlock State
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 300);
+        }
+
+        function undo() {
+            if (isTransitioning || history.length === 0) return;
+            isTransitioning = true;
+            window.speechSynthesis.cancel();
+
+            const last = history.pop();
+            
+            // Safe Array Removal: Find exact object reference in case it shifted
+            const indexToRemove = deck.indexOf(last.card);
+            if (indexToRemove > -1) deck.splice(indexToRemove, 1);
+            
+            deck.unshift(last.card);
+
+            // The Snap: Disable transitions, force layout reflow, snap to front
+            cardEl.style.transition = 'none';
+            isFlipped = false;
+            cardEl.classList.remove('is-flipped');
+            gradeRow.classList.add('disabled');
+            revealHint.classList.remove('disabled');
+            
+            updateDisplay();
+
+            // Force synchronous layout recalculation before re-enabling transition
+            void cardEl.offsetHeight; 
+            
+            cardEl.style.transition = 'transform 0.3s ease-in-out';
+            isTransitioning = false;
+        }
+
+        window.onkeydown = (e) => {
+            if (isTransitioning || document.getElementById('study-area').classList.contains('hidden')) return;
+            const key = e.key.toLowerCase();
+            
+            if (e.code === 'Space') {
+                e.preventDefault();
+                isFlipped = !isFlipped;
+                cardEl.classList.toggle('is-flipped');
+                if (isFlipped) {
+                    gradeRow.classList.remove('disabled');
+                    revealHint.classList.add('disabled');
+                } else {
+                    gradeRow.classList.add('disabled');
+                    revealHint.classList.remove('disabled');
+                }
+            }
+            if (key === 's') speak();
+            if (['1', '2', '3'].includes(key)) grade(key);
+            if (key === 'z') undo();
+            if (key === 'r') location.reload();
+        };
+    </script>
+</body>
+</html>
