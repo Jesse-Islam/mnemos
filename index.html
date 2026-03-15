@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mnemos | Flashcards</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -16,49 +16,77 @@
             background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             height: 100vh; margin: 0; overflow: hidden; transition: background 0.4s ease;
+            touch-action: none; /* Prevents pull-to-refresh on mobile */
         }
         
         #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.1); }
         #progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease; box-shadow: 0 0 15px var(--accent); }
 
-        #toolbar { position: absolute; top: 30px; left: 30px; display: flex; align-items: center; gap: 12px; z-index: 100; background: rgba(128,128,128,0.1); padding: 8px 15px; border-radius: 20px; backdrop-filter: blur(10px); }
-        .swatch { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        #toolbar { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; z-index: 100; background: rgba(128,128,128,0.1); padding: 8px 12px; border-radius: 20px; backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 80vw;}
+        .swatch { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .swatch.active { border-color: var(--text); }
-        #theme-toggle { background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 18px; padding: 0 5px; }
-        .github-link { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; border-left: 1px solid var(--ui-text); padding-left: 12px; opacity: 0.7; transition: 0.3s; }
+        #theme-toggle { background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 16px; padding: 0 5px; }
+        .github-link { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; border-left: 1px solid var(--ui-text); padding-left: 10px; opacity: 0.7; transition: 0.3s; }
         .github-link:hover { opacity: 1; color: var(--accent); }
 
-        #drop-zone { border: 3px dashed var(--ui-text); padding: 100px; border-radius: 40px; text-align: center; cursor: pointer; width: 650px; transition: 0.2s; }
+        #drop-zone { border: 3px dashed var(--ui-text); padding: 60px 20px; border-radius: 40px; text-align: center; cursor: pointer; width: 90%; max-width: 650px; transition: 0.2s; box-sizing: border-box; }
         #drop-zone:hover { border-color: var(--accent); background: rgba(128,128,128,0.03); }
         .hidden { display: none !important; }
 
-        #study-area { width: 95%; max-width: 1250px; height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #card-container { perspective: 2500px; width: 100%; height: 100%; max-height: 600px; position: relative; }
+        #study-area { width: 95%; max-width: 1000px; height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #card-container {perspective: 2500px; width: 100%; height: 60vh; max-height: 500px; position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; }
         
-        /* EXACT 300ms transition for mathematically precise text swapping */
         #card { position: relative; width: 100%; height: 100%; transition: transform 0.3s ease-in-out; transform-style: preserve-3d; }
         #card.is-flipped { transform: rotateY(180deg); }
         
-        .side { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); border-radius: 50px; padding: 60px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.5); border: 1px solid rgba(128,128,128,0.1); box-sizing: border-box; }
-        .back { transform: rotateY(180deg); border: 4px solid var(--accent); }
+        .side { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; background: var(--card); border-radius: 40px; padding: 40px; box-shadow: 0 20px 50px -20px rgba(0,0,0,0.5); border: 1px solid rgba(128,128,128,0.1); box-sizing: border-box; }
+        .back { transform: rotateY(180deg); border: 3px solid var(--accent); }
         
-        .category { font-size: 1rem; text-transform: uppercase; letter-spacing: 8px; color: var(--accent); position: absolute; top: 40px; font-weight: 800; }
-        .content { font-size: 2.2rem; font-weight: 700; line-height: 1.15; text-align: center; width: 100%; word-break: break-word; overflow-wrap: break-word; }
+        .category { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 6px; color: var(--accent); position: absolute; top: 30px; font-weight: 800; text-align: center; width: 100%;}
+        .content { font-size: 1.8rem; font-weight: 700; line-height: 1.2; text-align: center; width: 100%; word-break: break-word; overflow-wrap: break-word; max-height: 70%; overflow-y: auto; }
 
-        #controls { margin-top: 35px; color: var(--ui-text); font-size: 1.2rem; font-weight: 600; text-align: center; }
-        kbd { background: var(--card); padding: 6px 14px; border-radius: 10px; color: var(--text); border: 1px solid var(--ui-text); margin: 0 5px; }
-        .disabled { opacity: 0.15; pointer-events: none; filter: grayscale(1); }
+        #controls { margin-top: 25px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .control-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%; }
         
-        #stats { position: absolute; top: 35px; right: 40px; font-size: 1rem; color: var(--ui-text); font-weight: 700; letter-spacing: 2px; }
-        #tts-indicator { position: absolute; bottom: -35px; left: 50%; transform: translateX(-50%); font-size: 0.9rem; color: var(--accent); opacity: 0; transition: 0.2s; font-weight: 700; }
-        #tts-indicator.active { opacity: 1; bottom: -20px; }
+        .action-btn { background: var(--card); border: 1px solid var(--ui-text); color: var(--text); padding: 10px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .action-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+        .action-btn kbd { background: rgba(128,128,128,0.2); padding: 2px 6px; border-radius: 6px; font-size: 0.8rem; font-family: monospace; }
+        
+        .disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+        
+        #stats { position: absolute; top: 25px; right: 25px; font-size: 0.9rem; color: var(--ui-text); font-weight: 700; letter-spacing: 1px; z-index: 100;}
+        #tts-indicator { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: var(--accent); opacity: 0; transition: 0.2s; font-weight: 700; pointer-events: none; }
+        #tts-indicator.active { opacity: 1; bottom: -15px; }
 
         .btn { background: var(--accent); color: var(--bg); border: none; padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.2s; font-family: inherit; }
         .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
         .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
 
-        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        #modal { background: var(--card); padding: 40px; border-radius: 30px; max-width: 500px; border: 1px solid var(--ui-text); text-align: left; }
+        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        #modal { background: var(--card); padding: 30px; border-radius: 25px; width: 100%; max-width: 450px; border: 1px solid var(--ui-text); text-align: left; box-sizing: border-box; }
+	/* Visual Feedback Stamps */
+        #stamp {
+            position: absolute; top: -70px; left: 50%; transform: translateX(-50%) scale(0.5);
+            font-size: 2.2rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+            border: 4px solid; border-radius: 20px; padding: 10px 30px;
+            opacity: 0; pointer-events: none; z-index: 50; transition: 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(5px);
+        }
+        #stamp.show { opacity: 1; transform: translateX(-50%) scale(1); }
+        .s-hard { color: #f43f5e; border-color: #f43f5e; }
+        .s-easy { color: #3b82f6; border-color: #3b82f6; }
+        .s-master { color: #10b981; border-color: #10b981; }
+        .s-undo { color: #bd93f9; border-color: #bd93f9; }
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            #toolbar { top: 15px; left: 15px; padding: 6px 10px; }
+            #stats { top: 20px; right: 15px; font-size: 0.75rem; }
+            .content { font-size: 1.4rem; }
+            .side { padding: 30px 20px; }
+            #drop-zone h1 { font-size: 2rem !important; }
+            .action-btn { padding: 8px 12px; font-size: 0.85rem; }
+            .action-btn kbd { display: none; } /* Hide keyboard hints on mobile to save space */
+        }
     </style>
 </head>
 <body>
@@ -78,9 +106,9 @@
     <div id="stats">DECK: <span id="count">0</span> | UNDO: <span id="h-count">0</span></div>
 
     <div id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <h1 style="font-size: 2.8rem; margin-bottom: 10px;">Mnemos</h1>
-        <p style="color: var(--ui-text); line-height: 1.8; font-size: 1.2rem;">Drop CSV to begin studying</p>
-        <div style="display:flex; gap: 10px; justify-content: center;">
+        <h1 style="font-size: 2.8rem; margin-bottom: 10px; margin-top: 0;">Mnemos</h1>
+        <p style="color: var(--ui-text); line-height: 1.5; font-size: 1.1rem;">Drop CSV or tap to upload</p>
+        <div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">Upload File</button>
             <button class="btn btn-outline" onclick="event.stopPropagation(); showModal()">Create Deck</button>
         </div>
@@ -89,15 +117,15 @@
 
     <div id="modal-overlay" onclick="hideModal()">
         <div id="modal" onclick="event.stopPropagation()">
-            <h2 style="margin-top:0; color:var(--accent);">Create Your Own Deck</h2>
-            <p>Your CSV file should have exactly three columns in this order:</p>
-            <ol style="line-height: 2;">
+            <h2 style="margin-top:0; color:var(--accent);">Create Your Deck</h2>
+            <p>Your CSV file should have exactly three columns:</p>
+            <ol style="line-height: 1.8;">
                 <li><code>Question</code></li>
                 <li><code>Answer</code></li>
                 <li><code>Category</code></li>
             </ol>
             <div style="display:flex; gap: 10px; margin-top: 20px;">
-                <button class="btn" style="flex:1" onclick="downloadTemplate()">Download Template</button>
+                <button class="btn" style="flex:1" onclick="downloadTemplate()">Template</button>
                 <button class="btn btn-outline" onclick="hideModal()">Close</button>
             </div>
         </div>
@@ -105,6 +133,7 @@
 
     <div id="study-area" class="hidden">
         <div id="card-container">
+            <div id="stamp"></div> <div id="card">
             <div id="card">
                 <div class="side front">
                     <div class="category" id="cat-front">Category</div>
@@ -116,12 +145,21 @@
             </div>
             <div id="tts-indicator">🔊 SPEAKING...</div>
         </div>
+        
         <div id="controls">
-            <div id="reveal-hint"><kbd>Space</kbd> Reveal</div>
-            <div id="grade-row" class="disabled" style="margin: 25px 0;">
-                <kbd>1</kbd> Hard &nbsp; <kbd>2</kbd> Easy &nbsp; <kbd>3</kbd> Mastered
+            <div class="control-row">
+                <button id="btn-reveal" class="action-btn" onclick="toggleFlip()"><kbd>Space</kbd> Reveal / Flip</button>
             </div>
-            <div><kbd>S</kbd> Speak &nbsp;|&nbsp; <kbd>Z</kbd> Undo &nbsp;|&nbsp; <kbd>R</kbd> Reset</div>
+            <div id="grade-row" class="control-row disabled">
+                <button class="action-btn" onclick="grade('1')"><kbd>1</kbd> 👈 Hard</button>
+                <button class="action-btn" onclick="grade('2')"><kbd>2</kbd> ☝️ Easy</button>
+                <button class="action-btn" onclick="grade('3')"><kbd>3</kbd> 👉 Mastered</button>
+            </div>
+            <div class="control-row">
+                <button class="action-btn" onclick="speak()"><kbd>S</kbd> Speak</button>
+                <button class="action-btn" onclick="undo()"><kbd>Z</kbd> 👇 Undo</button>
+                <button class="action-btn" onclick="location.reload()"><kbd>R</kbd> Reset</button>
+            </div>
         </div>
     </div>
 
@@ -136,18 +174,18 @@
 
         let deck = [], history = [], totalCards = 0, isFlipped = false, isTransitioning = false;
         
-        // Cache DOM elements for performance
         const cardEl = document.getElementById('card');
         const gradeRow = document.getElementById('grade-row');
-        const revealHint = document.getElementById('reveal-hint');
+        const btnReveal = document.getElementById('btn-reveal');
         const qText = document.getElementById('q-text');
         const aText = document.getElementById('a-text');
         const catFront = document.getElementById('cat-front');
         const countEl = document.getElementById('count');
         const hCountEl = document.getElementById('h-count');
         const progressBar = document.getElementById('progress-bar');
+        const cardContainer = document.getElementById('card-container');
 
-        /* UI Theme Logic */
+        // Theme initialization remains the same
         function applyTheme(name, element = null) {
             const mode = document.documentElement.getAttribute('data-theme') || 'dark';
             const colors = themes[name][mode];
@@ -169,12 +207,10 @@
             localStorage.setItem('mn-mode', target);
         };
 
-        // Init App Theme
         const savedMode = localStorage.getItem('mn-mode') || 'dark';
         document.documentElement.setAttribute('data-theme', savedMode);
         document.getElementById('theme-toggle').innerText = savedMode === 'light' ? '☀️' : '🌙';
         
-        // Auto-select correct swatch on load
         const savedTheme = localStorage.getItem('mn-theme') || 'midnight';
         const swatchTitles = {'midnight':'Midnight', 'cyber':'Cyber', 'lavender':'Aura Lavender', 'terracotta':'Terracotta', 'rosewater':'Rosewater'};
         const activeSwatch = Array.from(document.querySelectorAll('.swatch')).find(s => s.title === swatchTitles[savedTheme]);
@@ -189,7 +225,6 @@
             a.click();
         }
 
-        /* Core Engine Logic */
         document.getElementById('file-input').onchange = (e) => {
             const reader = new FileReader();
             reader.onload = (event) => {
@@ -209,7 +244,7 @@
         function updateDisplay() {
             if (!deck.length && totalCards > 0) {
                 qText.innerText = "Session Complete 🏆";
-                aText.innerText = "Press R to Restart Deck";
+                aText.innerText = "Press Reset to Restart";
                 catFront.innerText = "DONE";
                 progressBar.style.width = "100%";
                 return;
@@ -226,7 +261,6 @@
             }
         }
 
-        /* Strict Offline Voice Logic */
         function speak() {
             window.speechSynthesis.cancel();
             if(!deck.length) return;
@@ -234,26 +268,33 @@
             const textToRead = isFlipped ? deck[0].a : deck[0].q;
             const msg = new SpeechSynthesisUtterance(textToRead);
             
-            // Filter available voices for local-only execution
             const voices = window.speechSynthesis.getVoices();
             const offlineVoices = voices.filter(voice => voice.localService === true);
             
             if (offlineVoices.length > 0) {
-                // Try to find an English offline voice, otherwise grab the first available offline voice
                 const preferredOffline = offlineVoices.find(v => v.lang.startsWith('en')) || offlineVoices[0];
                 msg.voice = preferredOffline;
             }
 
             msg.onstart = () => document.getElementById('tts-indicator').classList.add('active');
             msg.onend = () => document.getElementById('tts-indicator').classList.remove('active');
-            
             window.speechSynthesis.speak(msg);
         }
 
-        /* STATE SYNCHRONIZATION */
+        function toggleFlip() {
+            if (isTransitioning || document.getElementById('study-area').classList.contains('hidden') || !deck.length) return;
+            isFlipped = !isFlipped;
+            cardEl.classList.toggle('is-flipped');
+            if (isFlipped) {
+                gradeRow.classList.remove('disabled');
+                btnReveal.classList.add('disabled');
+            } else {
+                gradeRow.classList.add('disabled');
+                btnReveal.classList.remove('disabled');
+            }
+        }
 
         function grade(key) {
-            // State Lock: Cannot grade if animating, viewing front, or deck is empty.
             if (isTransitioning || !isFlipped || !deck.length) return;
             isTransitioning = true;
             window.speechSynthesis.cancel();
@@ -261,25 +302,16 @@
             const current = deck.shift();
             history.push({ card: current, type: key });
             
-            // Re-insert based on grade safely within boundaries
             if (key === '1') deck.splice(Math.min(3, deck.length), 0, current);
             if (key === '2') deck.splice(Math.min(10, deck.length), 0, current);
 
-            // Trigger Rotation back to 0deg
             isFlipped = false;
             cardEl.classList.remove('is-flipped');
             gradeRow.classList.add('disabled');
-            revealHint.classList.remove('disabled');
+            btnReveal.classList.remove('disabled');
 
-            // Swap text exactly at 150ms (card is invisible edge-on)
-            setTimeout(() => {
-                updateDisplay();
-            }, 150);
-
-            // Unlock State
-            setTimeout(() => {
-                isTransitioning = false;
-            }, 300);
+            setTimeout(() => { updateDisplay(); }, 150);
+            setTimeout(() => { isTransitioning = false; }, 300);
         }
 
         function undo() {
@@ -288,45 +320,208 @@
             window.speechSynthesis.cancel();
 
             const last = history.pop();
-            
-            // Safe Array Removal: Find exact object reference in case it shifted
             const indexToRemove = deck.indexOf(last.card);
             if (indexToRemove > -1) deck.splice(indexToRemove, 1);
-            
             deck.unshift(last.card);
 
-            // The Snap: Disable transitions, force layout reflow, snap to front
             cardEl.style.transition = 'none';
             isFlipped = false;
             cardEl.classList.remove('is-flipped');
             gradeRow.classList.add('disabled');
-            revealHint.classList.remove('disabled');
+            btnReveal.classList.remove('disabled');
             
             updateDisplay();
-
-            // Force synchronous layout recalculation before re-enabling transition
             void cardEl.offsetHeight; 
             
             cardEl.style.transition = 'transform 0.3s ease-in-out';
             isTransitioning = false;
         }
 
+// --- Stamp Feedback Helper ---
+        const stampEl = document.getElementById('stamp');
+        function flashStamp(text, className) {
+            stampEl.innerText = text;
+            stampEl.className = `show ${className}`;
+            setTimeout(() => { stampEl.classList.remove('show'); }, 400);
+        }
+
+        // --- Core Overrides to support Drag Physics ---
+        function toggleFlip() {
+            if (isTransitioning || document.getElementById('study-area').classList.contains('hidden') || !deck.length) return;
+            isFlipped = !isFlipped;
+            cardEl.style.transform = ''; // Clear inline drag physics
+            cardEl.classList.toggle('is-flipped');
+            if (isFlipped) {
+                gradeRow.classList.remove('disabled');
+                btnReveal.classList.add('disabled');
+            } else {
+                gradeRow.classList.add('disabled');
+                btnReveal.classList.remove('disabled');
+            }
+        }
+
+        function grade(key) {
+            if (isTransitioning || !isFlipped || !deck.length) return;
+            isTransitioning = true;
+            window.speechSynthesis.cancel();
+            
+            // Show flash feedback for button/keyboard users
+            if (key === '1') flashStamp('HARD', 's-hard');
+            if (key === '2') flashStamp('EASY', 's-easy');
+            if (key === '3') flashStamp('MASTERED', 's-master');
+            
+            const current = deck.shift();
+            history.push({ card: current, type: key });
+            
+            if (key === '1') deck.splice(Math.min(3, deck.length), 0, current);
+            if (key === '2') deck.splice(Math.min(10, deck.length), 0, current);
+
+            isFlipped = false;
+            cardEl.style.transform = ''; // Clear inline drag physics
+            cardEl.classList.remove('is-flipped');
+            gradeRow.classList.add('disabled');
+            btnReveal.classList.remove('disabled');
+
+            setTimeout(() => { updateDisplay(); }, 150);
+            setTimeout(() => { isTransitioning = false; }, 300);
+        }
+
+        function undo() {
+            if (isTransitioning || history.length === 0) return;
+            isTransitioning = true;
+            window.speechSynthesis.cancel();
+            
+            flashStamp('UNDO', 's-undo');
+
+            const last = history.pop();
+            const indexToRemove = deck.indexOf(last.card);
+            if (indexToRemove > -1) deck.splice(indexToRemove, 1);
+            deck.unshift(last.card);
+
+            cardEl.style.transition = 'none';
+            isFlipped = false;
+            cardEl.style.transform = ''; // Clear inline drag physics
+            cardEl.classList.remove('is-flipped');
+            gradeRow.classList.add('disabled');
+            btnReveal.classList.remove('disabled');
+            
+            updateDisplay();
+            void cardEl.offsetHeight; 
+            
+            cardEl.style.transition = 'transform 0.3s ease-in-out';
+            isTransitioning = false;
+        }
+
+	// --- Interactive Touch & Mouse Drag Engine ---
+        let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
+
+        cardContainer.addEventListener('pointerdown', e => {
+            if (isTransitioning || !deck.length) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            cardEl.style.transition = 'none'; // Disable snap transition while dragging
+            cardContainer.setPointerCapture(e.pointerId);
+        });
+
+        cardContainer.addEventListener('pointermove', e => {
+            if (!isDragging) return;
+            currentX = e.clientX - startX;
+            currentY = e.clientY - startY;
+            
+            // 1. Physically tilt and move the card
+            const rotate = currentX * 0.04; 
+            
+            // FIXED: Translate FIRST, then apply the 180deg flip so the drag direction doesn't invert!
+            cardEl.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg) ${isFlipped ? 'rotateY(180deg)' : ''}`;
+
+            // 2. Show dynamic stamp overlay
+            const absX = Math.abs(currentX);
+            const absY = Math.abs(currentY);
+            
+            if (absX > 40 || absY > 40) { // Drag threshold to show text
+                stampEl.classList.add('show');
+                stampEl.className = 'show'; // Reset colors
+                if (absX > absY) {
+                    if (!isFlipped) { stampEl.classList.remove('show'); return; }
+                    if (currentX > 0) { stampEl.innerText = "MASTERED"; stampEl.classList.add('s-master'); }
+                    else { stampEl.innerText = "HARD"; stampEl.classList.add('s-hard'); }
+                } else {
+                    if (currentY < 0 && isFlipped) { stampEl.innerText = "EASY"; stampEl.classList.add('s-easy'); }
+                    // FIXED: Only show Undo if there is actually history to undo
+                    else if (currentY > 0 && history.length > 0) { stampEl.innerText = "UNDO"; stampEl.classList.add('s-undo'); }
+                    else { stampEl.classList.remove('show'); }
+                }
+            } else {
+                stampEl.classList.remove('show');
+            }
+        });
+
+        cardContainer.addEventListener('pointerup', e => {
+            if (!isDragging) return;
+            isDragging = false;
+            cardContainer.releasePointerCapture(e.pointerId);
+            
+            const absX = Math.abs(currentX);
+            const absY = Math.abs(currentY);
+
+            // Re-enable smooth CSS transitions
+            cardEl.style.transition = 'transform 0.3s ease-in-out';
+
+            // Just a tap? Flip it!
+            if (absX < 20 && absY < 20) {
+                stampEl.classList.remove('show');
+                toggleFlip();
+            } 
+            // Dragged far enough to commit? (Commit threshold)
+            else if (absX > 90 || absY > 90) {
+                let committed = false;
+                
+                if (absX > absY) {
+                    if (isFlipped) {
+                        committed = true;
+                        if (currentX > 0) grade('3');
+                        else grade('1');
+                    }
+                } else {
+                    if (currentY < 0 && isFlipped) {
+                        committed = true;
+                        grade('2');
+                    } else if (currentY > 0 && history.length > 0) { // FIXED: Prevent undo commit if empty history
+                        committed = true;
+                        undo();
+                    }
+                }
+
+                // If user dragged but the action wasn't allowed (e.g. dragging sideways on front of card)
+                if (!committed) {
+                    stampEl.classList.remove('show');
+                    cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
+                }
+            } 
+            // Didn't drag far enough? Snap back to center
+            else {
+                stampEl.classList.remove('show');
+                cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
+            }
+            
+            currentX = 0; currentY = 0;
+        });
+
+        cardContainer.addEventListener('pointercancel', () => {
+            isDragging = false;
+            cardEl.style.transition = 'transform 0.3s ease-in-out';
+            cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
+            stampEl.classList.remove('show');
+            currentX = 0; currentY = 0;
+        });
+
+        // Desktop Keyboard bindings
         window.onkeydown = (e) => {
             if (isTransitioning || document.getElementById('study-area').classList.contains('hidden')) return;
             const key = e.key.toLowerCase();
             
-            if (e.code === 'Space') {
-                e.preventDefault();
-                isFlipped = !isFlipped;
-                cardEl.classList.toggle('is-flipped');
-                if (isFlipped) {
-                    gradeRow.classList.remove('disabled');
-                    revealHint.classList.add('disabled');
-                } else {
-                    gradeRow.classList.add('disabled');
-                    revealHint.classList.remove('disabled');
-                }
-            }
+            if (e.code === 'Space') { e.preventDefault(); toggleFlip(); }
             if (key === 's') speak();
             if (['1', '2', '3'].includes(key)) grade(key);
             if (key === 'z') undo();
