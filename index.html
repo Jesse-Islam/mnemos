@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mnemos | Flashcards</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -15,26 +15,39 @@
         body { 
             background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; margin: 0; overflow: hidden; transition: background 0.4s ease;
-            touch-action: none; /* Prevents pull-to-refresh on mobile */
+            /* FIXED: Use dvh to prevent bottom controls from hiding under mobile address bars */
+            height: 100vh; height: 100dvh; 
+            margin: 0; overflow: hidden; transition: background 0.4s ease;
+            /* REMOVED touch-action:none here so we can target it specifically on the card container */
         }
         
-        #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.1); }
+        #progress-container { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: rgba(0,0,0,0.1); z-index: 200; }
         #progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease; box-shadow: 0 0 15px var(--accent); }
 
-        #toolbar { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; z-index: 100; background: rgba(128,128,128,0.1); padding: 8px 12px; border-radius: 20px; backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 80vw;}
+        /* FIXED: Added env() variables for mobile notches and safe areas */
+        #toolbar { position: absolute; top: calc(20px + env(safe-area-inset-top)); left: calc(20px + env(safe-area-inset-left)); display: flex; align-items: center; gap: 10px; z-index: 100; background: rgba(128,128,128,0.1); padding: 8px 12px; border-radius: 20px; backdrop-filter: blur(10px); flex-wrap: wrap; max-width: 80vw;}
         .swatch { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
         .swatch.active { border-color: var(--text); }
         #theme-toggle { background: transparent; border: none; color: var(--text); cursor: pointer; font-size: 16px; padding: 0 5px; }
         .github-link { color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600; border-left: 1px solid var(--ui-text); padding-left: 10px; opacity: 0.7; transition: 0.3s; }
         .github-link:hover { opacity: 1; color: var(--accent); }
 
-        #drop-zone { border: 3px dashed var(--ui-text); padding: 60px 20px; border-radius: 40px; text-align: center; cursor: pointer; width: 90%; max-width: 650px; transition: 0.2s; box-sizing: border-box; }
+        #drop-zone { border: 3px dashed var(--ui-text); padding: 60px 20px; border-radius: 40px; text-align: center; cursor: pointer; width: 90%; max-width: 650px; transition: 0.2s; box-sizing: border-box; margin-top: env(safe-area-inset-top); }
         #drop-zone:hover { border-color: var(--accent); background: rgba(128,128,128,0.03); }
         .hidden { display: none !important; }
 
-        #study-area { width: 95%; max-width: 1000px; height: 85vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        #card-container {perspective: 2500px; width: 100%; height: 60vh; max-height: 500px; position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; }
+        #study-area { 
+            width: 100%; max-width: 1000px; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            padding: calc(60px + env(safe-area-inset-top)) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            box-sizing: border-box;
+        }
+        
+        #card-container {
+            perspective: 2500px; width: 90%; max-width: 800px; flex: 1; min-height: 0; max-height: 50vh; 
+            position: relative; cursor: pointer; user-select: none; -webkit-user-select: none; 
+            touch-action: none; /* Keep swipe physics smooth */
+        }
         
         #card { position: relative; width: 100%; height: 100%; transition: transform 0.3s ease-in-out; transform-style: preserve-3d; }
         #card.is-flipped { transform: rotateY(180deg); }
@@ -43,18 +56,21 @@
         .back { transform: rotateY(180deg); border: 3px solid var(--accent); }
         
         .category { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 6px; color: var(--accent); position: absolute; top: 30px; font-weight: 800; text-align: center; width: 100%;}
-        .content { font-size: 1.8rem; font-weight: 700; line-height: 1.2; text-align: center; width: 100%; word-break: break-word; overflow-wrap: break-word; max-height: 70%; overflow-y: auto; }
+        
+        /* FIXED: Allow text scrolling via touch-action */
+        .content { font-size: clamp(1.2rem, 4vw, 1.8rem); font-weight: 700; line-height: 1.3; text-align: center; width: 100%; word-break: break-word; overflow-wrap: break-word; max-height: 70%; overflow-y: auto; touch-action: pan-y; pointer-events: auto; }
 
-        #controls { margin-top: 25px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        #controls { margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; padding-bottom: 20px;}
         .control-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; width: 100%; }
         
-        .action-btn { background: var(--card); border: 1px solid var(--ui-text); color: var(--text); padding: 10px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .action-btn { background: var(--card); border: 1px solid var(--ui-text); color: var(--text); padding: 10px 15px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; -webkit-tap-highlight-color: transparent;}
         .action-btn:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
         .action-btn kbd { background: rgba(128,128,128,0.2); padding: 2px 6px; border-radius: 6px; font-size: 0.8rem; font-family: monospace; }
+        .action-btn:active { transform: scale(0.95); }
         
         .disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
         
-        #stats { position: absolute; top: 25px; right: 25px; font-size: 0.9rem; color: var(--ui-text); font-weight: 700; letter-spacing: 1px; z-index: 100;}
+        #stats { position: absolute; top: calc(25px + env(safe-area-inset-top)); right: calc(25px + env(safe-area-inset-right)); font-size: 0.9rem; color: var(--ui-text); font-weight: 700; letter-spacing: 1px; z-index: 100;}
         #tts-indicator { position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; color: var(--accent); opacity: 0; transition: 0.2s; font-weight: 700; pointer-events: none; }
         #tts-indicator.active { opacity: 1; bottom: -15px; }
 
@@ -62,9 +78,6 @@
         .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
         .btn-outline { background: transparent; border: 2px solid var(--accent); color: var(--accent); }
 
-        #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-        #modal { background: var(--card); padding: 30px; border-radius: 25px; width: 100%; max-width: 450px; border: 1px solid var(--ui-text); text-align: left; box-sizing: border-box; }
-	/* Visual Feedback Stamps */
         #stamp {
             position: absolute; top: -70px; left: 50%; transform: translateX(-50%) scale(0.5);
             font-size: 2.2rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
@@ -77,15 +90,28 @@
         .s-easy { color: #3b82f6; border-color: #3b82f6; }
         .s-master { color: #10b981; border-color: #10b981; }
         .s-undo { color: #bd93f9; border-color: #bd93f9; }
-        /* Mobile specific adjustments */
+        
+        /* Standard Mobile specific adjustments */
         @media (max-width: 600px) {
-            #toolbar { top: 15px; left: 15px; padding: 6px 10px; }
-            #stats { top: 20px; right: 15px; font-size: 0.75rem; }
-            .content { font-size: 1.4rem; }
+            #toolbar { top: calc(15px + env(safe-area-inset-top)); left: calc(15px + env(safe-area-inset-left)); padding: 6px 10px; }
+            #stats { top: calc(20px + env(safe-area-inset-top)); right: calc(15px + env(safe-area-inset-right)); font-size: 0.75rem; }
             .side { padding: 30px 20px; }
             #drop-zone h1 { font-size: 2rem !important; }
-            .action-btn { padding: 8px 12px; font-size: 0.85rem; }
-            .action-btn kbd { display: none; } /* Hide keyboard hints on mobile to save space */
+            .action-btn { padding: 10px 14px; font-size: 0.85rem; } /* Taller for touch targets */
+            .action-btn kbd { display: none; } 
+        }
+
+        /* FIXED: Landscape Mobile Support (Crucial for screen rotation) */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #study-area { 
+                flex-direction: row; align-items: stretch; gap: 20px; 
+                padding: calc(20px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) env(safe-area-inset-bottom) calc(20px + env(safe-area-inset-left)); 
+            }
+            #toolbar, #stats { display: none; } /* Hide non-essentials in cramped landscape */
+            #card-container { width: 60%; max-height: 100%; flex: 1; }
+            #controls { width: auto; flex-direction: row; justify-content: center; margin-top: 0; align-items: center; }
+            .control-row { flex-direction: column; width: auto; }
+            .side { padding: 20px; }
         }
     </style>
 </head>
@@ -110,30 +136,14 @@
         <p style="color: var(--ui-text); line-height: 1.5; font-size: 1.1rem;">Drop CSV or tap to upload</p>
         <div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
             <button class="btn" onclick="event.stopPropagation(); document.getElementById('file-input').click()">Upload File</button>
-            <button class="btn btn-outline" onclick="event.stopPropagation(); showModal()">Create Deck</button>
+            <button class="btn btn-outline" onclick="event.stopPropagation(); window.open('https://jesse-islam.github.io/ctrlcsv/', '_blank')">Create Deck</button>
         </div>
         <input type="file" id="file-input" style="display:none" accept=".csv">
     </div>
 
-    <div id="modal-overlay" onclick="hideModal()">
-        <div id="modal" onclick="event.stopPropagation()">
-            <h2 style="margin-top:0; color:var(--accent);">Create Your Deck</h2>
-            <p>Your CSV file should have exactly three columns:</p>
-            <ol style="line-height: 1.8;">
-                <li><code>Question</code></li>
-                <li><code>Answer</code></li>
-                <li><code>Category</code></li>
-            </ol>
-            <div style="display:flex; gap: 10px; margin-top: 20px;">
-                <button class="btn" style="flex:1" onclick="downloadTemplate()">Template</button>
-                <button class="btn btn-outline" onclick="hideModal()">Close</button>
-            </div>
-        </div>
-    </div>
-
     <div id="study-area" class="hidden">
         <div id="card-container">
-            <div id="stamp"></div> <div id="card">
+            <div id="stamp"></div> 
             <div id="card">
                 <div class="side front">
                     <div class="category" id="cat-front">Category</div>
@@ -185,7 +195,6 @@
         const progressBar = document.getElementById('progress-bar');
         const cardContainer = document.getElementById('card-container');
 
-        // Theme initialization remains the same
         function applyTheme(name, element = null) {
             const mode = document.documentElement.getAttribute('data-theme') || 'dark';
             const colors = themes[name][mode];
@@ -215,15 +224,6 @@
         const swatchTitles = {'midnight':'Midnight', 'cyber':'Cyber', 'lavender':'Aura Lavender', 'terracotta':'Terracotta', 'rosewater':'Rosewater'};
         const activeSwatch = Array.from(document.querySelectorAll('.swatch')).find(s => s.title === swatchTitles[savedTheme]);
         applyTheme(savedTheme, activeSwatch);
-
-        function showModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
-        function hideModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-        function downloadTemplate() {
-            const a = document.createElement('a');
-            a.setAttribute('href', 'https://raw.githubusercontent.com/Jesse-Islam/mnemos/main/example.csv');
-            a.setAttribute('download', 'mnemos_template.csv');
-            a.click();
-        }
 
         document.getElementById('file-input').onchange = (e) => {
             const reader = new FileReader();
@@ -284,6 +284,7 @@
         function toggleFlip() {
             if (isTransitioning || document.getElementById('study-area').classList.contains('hidden') || !deck.length) return;
             isFlipped = !isFlipped;
+            cardEl.style.transform = ''; 
             cardEl.classList.toggle('is-flipped');
             if (isFlipped) {
                 gradeRow.classList.remove('disabled');
@@ -299,73 +300,6 @@
             isTransitioning = true;
             window.speechSynthesis.cancel();
             
-            const current = deck.shift();
-            history.push({ card: current, type: key });
-            
-            if (key === '1') deck.splice(Math.min(3, deck.length), 0, current);
-            if (key === '2') deck.splice(Math.min(10, deck.length), 0, current);
-
-            isFlipped = false;
-            cardEl.classList.remove('is-flipped');
-            gradeRow.classList.add('disabled');
-            btnReveal.classList.remove('disabled');
-
-            setTimeout(() => { updateDisplay(); }, 150);
-            setTimeout(() => { isTransitioning = false; }, 300);
-        }
-
-        function undo() {
-            if (isTransitioning || history.length === 0) return;
-            isTransitioning = true;
-            window.speechSynthesis.cancel();
-
-            const last = history.pop();
-            const indexToRemove = deck.indexOf(last.card);
-            if (indexToRemove > -1) deck.splice(indexToRemove, 1);
-            deck.unshift(last.card);
-
-            cardEl.style.transition = 'none';
-            isFlipped = false;
-            cardEl.classList.remove('is-flipped');
-            gradeRow.classList.add('disabled');
-            btnReveal.classList.remove('disabled');
-            
-            updateDisplay();
-            void cardEl.offsetHeight; 
-            
-            cardEl.style.transition = 'transform 0.3s ease-in-out';
-            isTransitioning = false;
-        }
-
-// --- Stamp Feedback Helper ---
-        const stampEl = document.getElementById('stamp');
-        function flashStamp(text, className) {
-            stampEl.innerText = text;
-            stampEl.className = `show ${className}`;
-            setTimeout(() => { stampEl.classList.remove('show'); }, 400);
-        }
-
-        // --- Core Overrides to support Drag Physics ---
-        function toggleFlip() {
-            if (isTransitioning || document.getElementById('study-area').classList.contains('hidden') || !deck.length) return;
-            isFlipped = !isFlipped;
-            cardEl.style.transform = ''; // Clear inline drag physics
-            cardEl.classList.toggle('is-flipped');
-            if (isFlipped) {
-                gradeRow.classList.remove('disabled');
-                btnReveal.classList.add('disabled');
-            } else {
-                gradeRow.classList.add('disabled');
-                btnReveal.classList.remove('disabled');
-            }
-        }
-
-        function grade(key) {
-            if (isTransitioning || !isFlipped || !deck.length) return;
-            isTransitioning = true;
-            window.speechSynthesis.cancel();
-            
-            // Show flash feedback for button/keyboard users
             if (key === '1') flashStamp('HARD', 's-hard');
             if (key === '2') flashStamp('EASY', 's-easy');
             if (key === '3') flashStamp('MASTERED', 's-master');
@@ -377,7 +311,7 @@
             if (key === '2') deck.splice(Math.min(10, deck.length), 0, current);
 
             isFlipped = false;
-            cardEl.style.transform = ''; // Clear inline drag physics
+            cardEl.style.transform = ''; 
             cardEl.classList.remove('is-flipped');
             gradeRow.classList.add('disabled');
             btnReveal.classList.remove('disabled');
@@ -400,7 +334,7 @@
 
             cardEl.style.transition = 'none';
             isFlipped = false;
-            cardEl.style.transform = ''; // Clear inline drag physics
+            cardEl.style.transform = ''; 
             cardEl.classList.remove('is-flipped');
             gradeRow.classList.add('disabled');
             btnReveal.classList.remove('disabled');
@@ -412,15 +346,28 @@
             isTransitioning = false;
         }
 
-	// --- Interactive Touch & Mouse Drag Engine ---
+        const stampEl = document.getElementById('stamp');
+        function flashStamp(text, className) {
+            stampEl.innerText = text;
+            stampEl.className = `show ${className}`;
+            setTimeout(() => { stampEl.classList.remove('show'); }, 400);
+        }
+
         let startX = 0, startY = 0, currentX = 0, currentY = 0, isDragging = false;
 
         cardContainer.addEventListener('pointerdown', e => {
             if (isTransitioning || !deck.length) return;
+            
+            // FIXED: Prevent drag if user is trying to scroll a long text block
+            const contentEl = e.target.closest('.content');
+            if (contentEl && contentEl.scrollHeight > contentEl.clientHeight) {
+                return; // Let native browser scrolling handle the event
+            }
+
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
-            cardEl.style.transition = 'none'; // Disable snap transition while dragging
+            cardEl.style.transition = 'none'; 
             cardContainer.setPointerCapture(e.pointerId);
         });
 
@@ -429,26 +376,22 @@
             currentX = e.clientX - startX;
             currentY = e.clientY - startY;
             
-            // 1. Physically tilt and move the card
             const rotate = currentX * 0.04; 
             
-            // FIXED: Translate FIRST, then apply the 180deg flip so the drag direction doesn't invert!
             cardEl.style.transform = `translate(${currentX}px, ${currentY}px) rotate(${rotate}deg) ${isFlipped ? 'rotateY(180deg)' : ''}`;
 
-            // 2. Show dynamic stamp overlay
             const absX = Math.abs(currentX);
             const absY = Math.abs(currentY);
             
-            if (absX > 40 || absY > 40) { // Drag threshold to show text
+            if (absX > 40 || absY > 40) { 
                 stampEl.classList.add('show');
-                stampEl.className = 'show'; // Reset colors
+                stampEl.className = 'show'; 
                 if (absX > absY) {
                     if (!isFlipped) { stampEl.classList.remove('show'); return; }
                     if (currentX > 0) { stampEl.innerText = "MASTERED"; stampEl.classList.add('s-master'); }
                     else { stampEl.innerText = "HARD"; stampEl.classList.add('s-hard'); }
                 } else {
                     if (currentY < 0 && isFlipped) { stampEl.innerText = "EASY"; stampEl.classList.add('s-easy'); }
-                    // FIXED: Only show Undo if there is actually history to undo
                     else if (currentY > 0 && history.length > 0) { stampEl.innerText = "UNDO"; stampEl.classList.add('s-undo'); }
                     else { stampEl.classList.remove('show'); }
                 }
@@ -465,15 +408,12 @@
             const absX = Math.abs(currentX);
             const absY = Math.abs(currentY);
 
-            // Re-enable smooth CSS transitions
             cardEl.style.transition = 'transform 0.3s ease-in-out';
 
-            // Just a tap? Flip it!
             if (absX < 20 && absY < 20) {
                 stampEl.classList.remove('show');
                 toggleFlip();
             } 
-            // Dragged far enough to commit? (Commit threshold)
             else if (absX > 90 || absY > 90) {
                 let committed = false;
                 
@@ -487,19 +427,17 @@
                     if (currentY < 0 && isFlipped) {
                         committed = true;
                         grade('2');
-                    } else if (currentY > 0 && history.length > 0) { // FIXED: Prevent undo commit if empty history
+                    } else if (currentY > 0 && history.length > 0) { 
                         committed = true;
                         undo();
                     }
                 }
 
-                // If user dragged but the action wasn't allowed (e.g. dragging sideways on front of card)
                 if (!committed) {
                     stampEl.classList.remove('show');
                     cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
                 }
             } 
-            // Didn't drag far enough? Snap back to center
             else {
                 stampEl.classList.remove('show');
                 cardEl.style.transform = isFlipped ? 'rotateY(180deg)' : '';
@@ -516,7 +454,6 @@
             currentX = 0; currentY = 0;
         });
 
-        // Desktop Keyboard bindings
         window.onkeydown = (e) => {
             if (isTransitioning || document.getElementById('study-area').classList.contains('hidden')) return;
             const key = e.key.toLowerCase();
